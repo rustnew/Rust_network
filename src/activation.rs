@@ -1,11 +1,13 @@
 use ndarray::Array2;
+use serde::{Deserialize, Serialize};
 
 /// Fonctions d'activation et leurs dérivées
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Activation {
     Sigmoid,
     Relu,
     Tanh,
+    Linear,
 }
 
 impl Activation {
@@ -15,6 +17,7 @@ impl Activation {
             Activation::Sigmoid => x.mapv(|v| 1.0 / (1.0 + (-v).exp())),
             Activation::Relu => x.mapv(|v| v.max(0.0)),
             Activation::Tanh => x.mapv(|v| v.tanh()),
+            Activation::Linear => x.clone(),
         }
     }
 
@@ -30,6 +33,7 @@ impl Activation {
                 let tanh = self.apply(x);
                 1.0 - &tanh * &tanh
             }
+            Activation::Linear => Array2::ones(x.dim()),
         }
     }
 }

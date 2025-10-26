@@ -1,8 +1,10 @@
 use ndarray::Array2;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 use crate::activation::Activation;
 
 /// Représente une couche du réseau neuronal
+#[derive(Serialize, Deserialize)]
 pub struct Layer {
     pub weights: Array2<f64>,
     pub biases: Array2<f64>,
@@ -14,9 +16,15 @@ impl Layer {
     pub fn new(input_size: usize, output_size: usize, activation: Activation) -> Self {
         let mut rng = rand::thread_rng();
         
-        // Initialisation simple avec distribution normale manuelle
+        // Initialisation He/Xavier améliorée
+        let std_dev = match activation {
+            Activation::Relu => (2.0 / input_size as f64).sqrt(),
+            Activation::Sigmoid | Activation::Tanh => (1.0 / input_size as f64).sqrt(),
+            Activation::Linear => (1.0 / input_size as f64).sqrt(),
+        };
+
         let weights = Array2::from_shape_fn((output_size, input_size), |_| {
-            rng.r#gen::<f64>() * 0.1 - 0.05  // Valeurs entre -0.05 et 0.05
+            rng.r#gen::<f64>() * std_dev * 2.0 - std_dev
         });
 
         let biases = Array2::zeros((output_size, 1));
@@ -43,5 +51,10 @@ impl Layer {
     pub fn update_parameters(&mut self, dw: &Array2<f64>, db: &Array2<f64>, learning_rate: f64) {
         self.weights = &self.weights - learning_rate * dw;
         self.biases = &self.biases - learning_rate * db;
+    }
+
+    /// Retourne le nombre de neurones dans cette couche
+    pub fn size(&self) -> usize {
+        self.weights.nrows()
     }
 }
